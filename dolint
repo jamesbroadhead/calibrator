@@ -1,0 +1,30 @@
+#!/bin/bash
+
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "${REPO_ROOT}" || exit 1
+
+export PYTHONPATH=""
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+BASHFILES=("dolint")
+
+yapf -i -r --style="./style.yapf" ./*py
+A=$?
+
+pyflakes ./*py
+B=$?
+
+pylint --rcfile=pylintrc ./*py
+C=$?
+
+command -v shellcheck >/dev/null 2>&1 || { echo >&2 "I require shellcheck to lint bash files but it's not installed.  Aborting."; exit 1; }
+
+shellcheck "${BASHFILES[@]}"
+D=$?
+
+for i in $A $B $C $D ; do
+  if ! [ $i -eq 0 ] ; then
+    exit $i
+  fi
+done
